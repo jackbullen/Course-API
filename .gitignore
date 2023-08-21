@@ -1,0 +1,4 @@
+data/courses.json
+*__pycache__
+*migrations
+*.DS_Store
