@@ -105,22 +105,26 @@ class MeetingTimeList(generics.ListAPIView):
                     filter_query |= Q(**{day: True})
             queryset = queryset.filter(filter_query)
 
-        begin = self.request.query_params.get('begin')
-        if begin:
-            queryset = queryset.filter(beginTime=begin)
+        bldg = self.request.query_params.get('bldg')
+        if bldg:
+            queryset = queryset.filter(sections__meetingLocation__buildingDescription__icontains=bldg).distinct()
+
+        start = self.request.query_params.get('start')
+        if start:
+            queryset = queryset.filter(beginTime=start)
 
     
         end = self.request.query_params.get('end')
         if end:
             queryset = queryset.filter(endTime=end)
         
-        bAfter = self.request.query_params.get('baft')
-        if bAfter:
-            queryset = queryset.filter(beginTime__gte=bAfter)
+        saft = self.request.query_params.get('saft')
+        if saft:
+            queryset = queryset.filter(beginTime__gte=saft)
         
-        eBefore = self.request.query_params.get('ebef')
-        if eBefore:
-            queryset = queryset.filter(endTime__lte=eBefore)
+        ebef = self.request.query_params.get('ebef')
+        if ebef:
+            queryset = queryset.filter(endTime__lte=ebef)
 
         return queryset
 
@@ -138,7 +142,7 @@ class MeetingTimeSections(generics.ListAPIView):
         subject = self.request.query_params.get('subject')
         if subject:
             queryset = queryset.filter(program__subject=subject)
-
+        
         return queryset
 
 class MeetingLocationList(generics.ListAPIView):
@@ -153,6 +157,11 @@ class MeetingLocationList(generics.ListAPIView):
         wing = self.request.query_params.get('wing')
         if wing:
             queryset = queryset.filter(room__startswith=wing)
+
+        subject = self.request.query_params.get('subject')
+        if subject:
+            queryset = queryset.filter(sections__course__program__subject=subject).distinct()
+
         return queryset
 
 class MeetingLocationDetail(generics.RetrieveAPIView):

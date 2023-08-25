@@ -1,6 +1,6 @@
 # course-API
 
-This is an Django application programming interface (API) that I will use with a front end application. I would also like to modify it to include a Student model and make a course management system.
+This is a Django application programming interface (API) that I will use with a front end application. I would also like to modify it to include a Student model and make a course management system.
 
 Files of interest are
 

@@ -21,8 +21,8 @@ urlpatterns = [
     path('sections/', SectionList.as_view(), name='query_sections'),
     path('sections/<int:pk>/', SectionDetail.as_view(), name='section_detail'),
 
-    path('courses/<str:term>/', TermCoursesView.as_view(), name='term_courses'),
-    path('courses/<str:term>/<str:subject>/', SubjectCoursesView.as_view(), name='subject_courses'),
-    path('section/<str:term>/<str:subject>/<str:course_number>/', CourseSectionsView.as_view(), name='course_sections'),
-    path('section/<str:term>/<str:subject>/<str:course_number>/<str:sequenceNumber>', DetailedSection.as_view(), name='course_sections')
+    path('api/<str:term>/', TermCoursesView.as_view(), name='term_courses'),
+    path('api/<str:term>/<str:subject>/', SubjectCoursesView.as_view(), name='subject_courses'),
+    path('api/<str:term>/<str:subject>/<str:course_number>/', CourseSectionsView.as_view(), name='course_sections'),
+    path('api/<str:term>/<str:subject>/<str:course_number>/<str:sequenceNumber>', DetailedSection.as_view(), name='course_sections')
 ]
