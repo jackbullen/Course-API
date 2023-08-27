@@ -1,19 +1,61 @@
 """
-Django settings for Course API project.
+Django settings for courses_api project.
 """
 
+from django.core.management.utils import get_random_secret_key
 from pathlib import Path
 import os
-from django.core.management.utils import get_random_secret_key
+import io
+import environ
+from google.cloud import secretmanager
+from urllib.parse import urlparse
+from google.oauth2 import service_account
+
+# Build paths inside the project like this: os.path.join(BASE_DIR, ...)
+BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+
+env = environ.Env(DEBUG=(bool, False))
+env_file = os.path.join(BASE_DIR, ".env")
+
+if os.path.isfile(env_file):
+    # Use a local secret file, if provided
+
+    env.read_env(env_file)
+
+elif os.environ.get("GOOGLE_CLOUD_PROJECT", None):
+    # Pull secrets from Secret Manager
+    project_id = os.environ.get("GOOGLE_CLOUD_PROJECT")
+
+    client = secretmanager.SecretManagerServiceClient()
+    settings_name = os.environ.get("SETTINGS_NAME", "django_settings")
+    name = f"projects/{project_id}/secrets/{settings_name}/versions/latest"
+    payload = client.access_secret_version(name=name).payload.data.decode("UTF-8")
+
+    env.read_env(io.StringIO(payload))
+else:
+    raise Exception("No local .env or GOOGLE_CLOUD_PROJECT detected. No secrets found.")
+# [END gaestd_py_django_secret_config]
 
 
-BASE_DIR = Path(__file__).resolve().parent.parent
+APPENGINE_URL = env("APPENGINE_URL", default=None)
+if APPENGINE_URL:
+    # Ensure a scheme is present in the URL before it's processed.
+    if not urlparse(APPENGINE_URL).scheme:
+        APPENGINE_URL = f"https://{APPENGINE_URL}"
+
+    ALLOWED_HOSTS = [urlparse(APPENGINE_URL).netloc]
+    CSRF_TRUSTED_ORIGINS = [APPENGINE_URL]
+    SECURE_SSL_REDIRECT = True
+else:
+    ALLOWED_HOSTS = ["*"]
 
 SECRET_KEY = get_random_secret_key()
 
-DEBUG = True
+# SECURITY WARNING: don't run with debug turned on in production!
+DEBUG = False
 
-ALLOWED_HOSTS = []
+
+# Application definition
 
 INSTALLED_APPS = [
     'django.contrib.admin',
@@ -55,47 +97,36 @@ TEMPLATES = [
     },
 ]
 
-
-# wsgi app name
 WSGI_APPLICATION = 'courses_api.wsgi.application'
 
 
 # Database
+# https://docs.djangoproject.com/en/4.2/ref/settings/#databases
 
 # To create database, you can use these psql commands:
-# CREATE DATABASE test_db;
-# CREATE USER test_user WITH PASSWORD 'test_pass';
-# GRANT ALL PRIVILEGES ON DATABASE test_db TO test_user;
-# ALTER DATABASE test_db OWNER TO test_user;
+# CREATE DATABASE courses_api;
+# CREATE USER manager WITH PASSWORD 'manager';
+# GRANT ALL PRIVILEGES ON DATABASE courses_api TO manager;
+# ALTER DATABASE courses_api OWNER TO manager;
 # \q
 
-# To import data to database:
-# python manage.py makemigrations
-# python manage.py migrate
-# python manage.py import_models data/math_courses.json
-
-# You can get more data if you please. However I did not want to 
-# upload the entire courses.json to github. You can get the data from:
-# https://www.uvic.ca/BAN1P/bwckschd.p_disp_dyn_sched
-
 # After import data to database, you can check it by:
-# psql -U manager -d test_db
+# psql -U manager -d courses_api
 # \l
-# \c test_db
+# \c courses_api
 # \dt
 # \d courses_program
 # ...
 
-DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.postgresql_psycopg2',
-        'NAME': 'test_db',
-        'USER': 'test_user',
-        'PASSWORD': 'test_pass',
-        'HOST': 'localhost',
-        'PORT': '5432',
-    }
-}
+DATABASES = {"default": env.db()}
+
+# If the flag as been set, configure to use proxy
+if os.getenv("USE_CLOUD_SQL_AUTH_PROXY", None):
+    DATABASES["default"]["HOST"] = "127.0.0.1"
+    DATABASES["default"]["PORT"] = 5432
+
+# [END gaestd_py_django_database_config]
+# [END db_setup]
 
 REST_FRAMEWORK = {
     'DEFAULT_PAGINATION_CLASS': 'rest_framework.pagination.PageNumberPagination',
@@ -105,6 +136,8 @@ REST_FRAMEWORK = {
 
 
 # Password validation
+# https://docs.djangoproject.com/en/4.2/ref/settings/#auth-password-validators
+
 AUTH_PASSWORD_VALIDATORS = [
     {
         'NAME': 'django.contrib.auth.password_validation.UserAttributeSimilarityValidator',
@@ -122,18 +155,32 @@ AUTH_PASSWORD_VALIDATORS = [
 
 
 # Internationalization
+# https://docs.djangoproject.com/en/4.2/topics/i18n/
+
 LANGUAGE_CODE = 'en-us'
+
 TIME_ZONE = 'UTC'
+
 USE_I18N = True
+
 USE_TZ = True
 
+GS_CREDENTIALS = service_account.Credentials.from_service_account_file(
+    os.path.join(BASE_DIR, 'gcpCredentials.json')
+)
 
+DEFAULT_FILE_STORAGE = 'storages.backends.gcloud.GoogleCloudStorage'
+STATICFILES_STORAGE = 'storages.backends.gcloud.GoogleCloudStorage'
+GS_BUCKET_NAME = env('GS_BUCKET_NAME')
+
+# STATIC
 # Static files (CSS, JavaScript, Images)
-PROJECT_ROOT = os.path.dirname(os.path.abspath(__file__))
+# https://docs.djangoproject.com/en/4.2/howto/static-files/
+# PROJECT_ROOT = os.path.dirname(os.path.abspath(__file__))
 STATIC_URL = 'static/'
-STATICFILES_DIRS = [os.path.join(BASE_DIR, 'static')]
-STATIC_ROOT = os.path.join(PROJECT_ROOT, 'static')
-
-
+# STATICFILES_DIRS = [os.path.join(BASE_DIR, 'static')]
+# STATIC_ROOT = os.path.join(PROJECT_ROOT, 'static')
 # Default primary key field type
+# https://docs.djangoproject.com/en/4.2/ref/settings/#default-auto-field
+
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
