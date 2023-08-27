@@ -39,7 +39,18 @@ def get_days_of_week(days_of_week_string):
 class ProgramList(generics.ListAPIView):
     serializer_class = ProgramSerializer
     def get_queryset(self):
-        return Program.objects.all().order_by('subject')
+
+        queryset = Program.objects.all().order_by('subject')
+        
+        subject = self.request.query_params.get('subject')
+        if subject:
+            queryset = queryset.filter(subject__icontains=subject)
+
+        subjectD = self.request.query_params.get('subjectD')
+        if subjectD:
+            queryset = queryset.filter(subjectDescription__icontains=subjectD)
+
+        return queryset
     
 class ProgramDetail(generics.RetrieveAPIView):
     queryset = Program.objects.all()
@@ -189,7 +200,7 @@ class CourseList(generics.ListAPIView):
 
         subject = self.request.query_params.get('subject')
         if subject:
-            queryset = queryset.filter(program__subject=subject)
+            queryset = queryset.filter(program__subject__icontains=subject)
 
         bldg = self.request.query_params.get('bldg')
         if bldg:
@@ -310,6 +321,42 @@ class SectionDetail(generics.RetrieveAPIView):
     queryset = Section.objects.all()
     serializer_class = SectionSerializer
 
+class DegreeList(generics.ListAPIView):
+    serializer_class = DegreeSerializer
+    pagination_class = PageNumberPagination
+    def get_queryset(self):
+        queryset = Degree.objects.all().order_by('program__subject', 'cred')
+
+        subject = self.request.query_params.get('subject')
+        if subject:
+            queryset = queryset.filter(program__subject=subject)
+
+        cred = self.request.query_params.get('cred')
+        if cred:
+            queryset = queryset.filter(cred=cred)
+
+        code = self.request.query_params.get('code')
+        if code:
+            queryset = queryset.filter(code=code)
+
+        return queryset
+
+class GrandProgramList(generics.ListAPIView):
+    serializer_class = GrandProgramSerializer
+    pagination_class = PageNumberPagination
+    def get_queryset(self):
+        queryset = Program.objects.all().order_by('subject')
+
+        subject = self.request.query_params.get('subject')
+        if subject:
+            queryset = queryset.filter(subject=subject)
+
+        return queryset
+
+class GrandProgramDetail(generics.RetrieveAPIView):
+    queryset = Program.objects.all()
+    serializer_class = GrandProgramSerializer
+        
 class TermCoursesView(APIView):
     def get(self, request, term, format=None):
         courses = Course.objects.filter(term=term).order_by('program__subject','courseNumber')

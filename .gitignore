@@ -4,3 +4,5 @@ data/courses.json
 *.DS_Store
 venv/
 courses_api/static/
+.env
+data/**/*.json

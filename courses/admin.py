@@ -1,5 +1,5 @@
 from django.contrib import admin
-from .models import Faculty, Course, MeetingTime, MeetingLocation, Program, Section, InstructorRole, CourseLabLink, CourseTutorialLink
+from .models import Faculty, Course, MeetingTime, MeetingLocation, Program, Section, InstructorRole, CourseSectionLink, Degree, Specialization
 
 class FacultyAdmin(admin.ModelAdmin):
     list_display = ('displayName', 'emailAddress')
@@ -29,6 +29,18 @@ class InstructorRoleAdmin(admin.ModelAdmin):
     list_display = ('section', 'faculty', 'primaryInstructor')
     search_fields = ('section', 'faculty')
 
+class CourseSectionLinkAdmin(admin.ModelAdmin):
+    list_display = ('course', 'section')
+    search_fields = ('course', 'section')
+
+class DegreeAdmin(admin.ModelAdmin):
+    list_display = ('code', 'cred', 'program')
+    search_fields = ('code', 'cred', 'program')
+
+# class SpecializationAdmin(admin.ModelAdmin):
+    
+
+
 admin.site.register(Faculty, FacultyAdmin)
 admin.site.register(Course, CourseAdmin)
 admin.site.register(MeetingTime, MeetingTimeAdmin)
@@ -36,5 +48,6 @@ admin.site.register(MeetingLocation, MeetingLocationAdmin)
 admin.site.register(Program, ProgramAdmin)
 admin.site.register(Section, SectionAdmin)
 admin.site.register(InstructorRole, InstructorRoleAdmin)
-admin.site.register(CourseLabLink)
-admin.site.register(CourseTutorialLink)
+admin.site.register(CourseSectionLink)
+admin.site.register(Degree, DegreeAdmin)
+admin.site.register(Specialization)

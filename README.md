@@ -12,4 +12,8 @@ Files of interest are
 
 - models.py defines all entities and relationships
 
-- import_models.py loads the course objects from a json file into the django apps postgresql database. It uses lists of fields to filter the raw data making the code terse
+- courses/management/commands holds the scripts that load the course objects from json files into the django apps postgresql database.
+
+## Todo:
+
+1. Create a link between courses and degrees as outlined in import_models_from_calendar.py

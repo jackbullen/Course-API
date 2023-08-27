@@ -54,6 +54,24 @@ class CourseSectionSerializer(serializers.ModelSerializer):
         model = Section
         fields = '__all__'
 
+class DegreeSerializer(serializers.ModelSerializer):
+    program = ProgramSerializer()
+    class Meta:
+        model = Degree
+        fields = '__all__'
+
+class BriefDegreeSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Degree
+        fields = '__all__'
+
+class GrandProgramSerializer(serializers.ModelSerializer):
+    degrees = BriefDegreeSerializer(many=True)
+    courses = CourseSerializer(many=True)
+    class Meta:
+        model = Program
+        fields = '__all__'
+
 class APISerializer(serializers.Serializer):
     subject = serializers.CharField(required=False)
     course = serializers.CharField(required=False)

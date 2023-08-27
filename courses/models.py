@@ -1,6 +1,8 @@
 from django.db import models
 from django.template.defaultfilters import slugify
 
+# Program, Faculty, MeetingTime and MeetingLocation, Course, Section, Degree, and Specialization
+
 class Program(models.Model):
     subject = models.CharField(max_length=10, unique=True)
     subjectDescription = models.CharField(max_length=100)
@@ -41,18 +43,27 @@ class MeetingLocation(models.Model):
         return f"{self.building} {self.room} ({self.campus})"
 
 class Course(models.Model):
-    term = models.CharField(max_length=6)
+    term = models.CharField(max_length=6, null=True)
     program = models.ForeignKey(Program, on_delete=models.CASCADE, null=True, related_name='courses')
     courseNumber = models.CharField(max_length=10) #370
     courseTitle = models.CharField(max_length=200) #Database Systems
     slug = models.SlugField(max_length=200, unique=True)
     creditHours = models.CharField(max_length=10, null=True)
+    description = models.CharField(max_length=15000, null=True)
+    link = models.CharField(max_length=200, null=True)
     def __str__(self):
         return f"{self.program}{self.courseNumber} - {self.term}"
     def save(self, *args, **kwargs):
         self.slug = slugify(self.program.subject+self.courseNumber)
         super(Course, self).save(*args, **kwargs)
 
+# class CourseReview(models.Model):
+#     course = models.ForeignKey(Course, on_delete=models.CASCADE, related_name='reviews')
+#     rating = models.CharField(max_length=10)
+#     review = models.CharField(max_length=10000)
+#     def __str__(self):
+#         return f"{self.course} - {self.rating}"
+    
 class Section(models.Model):
     id = models.CharField(max_length=10, primary_key=True)
     term = models.CharField(max_length=6)
@@ -72,21 +83,48 @@ class Section(models.Model):
     def __str__(self):
         return f"{self.sequenceNumber}"
     
+class Degree(models.Model):
+    code = models.CharField(max_length=100, unique=True)
+    cred = models.CharField(max_length=100)
+    program = models.ForeignKey(Program, on_delete=models.CASCADE, related_name='degrees', null=True) 
+    description = models.CharField(max_length=10000, null=True)
+    slug = models.SlugField(max_length=200, unique=True)
+    link = models.CharField(max_length=200, null=True)
+    requirements = models.CharField(max_length=50000, null=True)
+    notes = models.CharField(max_length=10000, null=True)
+    def __str__(self):
+        return self.code
+    def save(self, *args, **kwargs):
+        if self.program is None:
+            ct = Degree.objects.all().count()
+            self.slug = slugify(self.code+'-'+self.cred+'-'+str(ct))
+        else:
+            self.slug = slugify(self.program.subject+'-'+self.code+'-'+self.cred)
+        super(Degree, self).save(*args, **kwargs)
+
+class Specialization(models.Model):
+    degree = models.ForeignKey(Degree, on_delete=models.CASCADE, related_name='specializations')
+    requirements = models.CharField(max_length=30000, null=True)
+    title = models.CharField(max_length=100)
+    notes = models.CharField(max_length=10000, null=True)
+    def __str__(self):
+        return self.degree.program.subject + " - " + self.degree.cred + " - " + self.title
+    
+# For models like InstructorRole and CourseSectionLink should I be using ForeignKey or ManyToManyField?
+# Create a bunch more objects or just make one and handle all links through there.
+
+# Create a bunch of objects for each section/faculty pair.
 class InstructorRole(models.Model):
     section = models.ForeignKey(Section, on_delete=models.CASCADE, related_name='instructors')
     faculty = models.ForeignKey(Faculty, on_delete=models.CASCADE, related_name='instructing')
     primaryInstructor = models.BooleanField(default=False)
     def __str__(self):
         return f"{self.faculty} - {self.section}"
-
-class CourseLabLink(models.Model):
-    course = models.ForeignKey(Course, on_delete=models.CASCADE, related_name='linked_labs')
-    labs = models.ManyToManyField(Section, related_name='linked_labs')
-    def __str__(self):
-        return f"{self.course} - {self.labs}"
     
-class CourseTutorialLink(models.Model):
-    course = models.ForeignKey(Course, on_delete=models.CASCADE, related_name='linked_tutorials')
-    tutorials = models.ManyToManyField(Section, related_name='linked_tutorials')
+# Just make two objects for each course and have ManyToManyField for each section.
+class CourseSectionLink(models.Model):
+    course = models.ForeignKey(Course, on_delete=models.CASCADE, related_name='linked_sections')
+    sections = models.ManyToManyField(Section, related_name='linked_sections')
+    type = models.CharField(max_length=10)
     def __str__(self):
-        return f"{self.course} - {self.tutorials}"
+        return f"{self.course} - {self.sections}"
