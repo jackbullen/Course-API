@@ -20,7 +20,7 @@ urlpatterns = [
     path('meetinglocations/<int:pk>/sections', MeetingLocationSections.as_view(), name='meeting_location_courses'),
 
     path('courses/', CourseList.as_view(), name='query_courses'),
-    # path('courses/<int:pk>/', CourseDetail.as_view(), name='course_detail'),
+    path('courses/<int:pk>/', CourseDetail.as_view(), name='course_detail'),
     path('sections/', SectionList.as_view(), name='query_sections'),
     path('sections/<int:pk>/', SectionDetail.as_view(), name='section_detail'),
     

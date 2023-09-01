@@ -1,8 +1,12 @@
+# This script could be improved by just incorporating it into import_models_from_banner
+# and using the dictionary of program instances rather than querying the database for programs.
+# Also, could find a better way of handling the 6 cases where requirements doesn't contain any courses.
+
 import json
 from django.core.management.base import BaseCommand
-from django.template.defaultfilters import slugify
-from courses.models import Faculty, MeetingTime, Course, Program, MeetingLocation, Section, InstructorRole, CourseLabLink, CourseTutorialLink, Degree, Specialization
+from courses.models import Program, Degree, Specialization
 import re 
+import sys
 from collections import Counter
 
 # TODO: In models.py merge CourseLabLink and CourseTutorialLink into CourseSectionLink by adding parameter and import instances from data here.
@@ -26,11 +30,16 @@ class Command(BaseCommand):
         with open(filename, 'r') as f:
             data = json.load(f)
            
+            DEGREES = dict()
+            SPECS = dict()
+
             for item in data:
                 key =  str(item)
 
                 # Get program code
                 try:
+                    # program code is obtained by looking at the courses in the requirements and finding the most common one.
+                    # this may give innacurate results, but it works in all cases I've looked at.
                     courses = re.findall(r'([A-Z]{2,4}\d{3}[A-Z]?\d?|[A-Z]{2,4})', data[key]['requirements'])
                     potential_program_codes = [re.findall(r'[A-Z]{2,4}', code)[0] for code in courses]
                     program_code = Counter(potential_program_codes).most_common(1)[0][0]
@@ -56,14 +65,20 @@ class Command(BaseCommand):
                     'requirements': data[key].get('requirements'),
                     'notes': data[key].get('notes'),
                 }
-                degree_instance = Degree.objects.get_or_create(**degree_data)[0]
+                DEGREES[data[key]['code']] = Degree(**degree_data)
+            Degree.objects.bulk_create(list(DEGREES.values()))
+            for item in data:
+                key =  str(item)
 
                 # Create Specialization Instances
                 for spec in data[key]['specializations']:
-                    Specialization.objects.get_or_create(
-                        degree = degree_instance,
+                    SPECS[data[key]['code']+'specs'] = Specialization(
+                        degree = DEGREES[data[key]['code']],
                         requirements = spec.get('requirements'),
                         title = spec.get('title'),
                         notes = spec.get('concentrationProgramNotes'),
                     )
+            Specialization.objects.bulk_create(list(SPECS.values()))
+
+            sys.stdout.write(self.style.SUCCESS('Loaded degrees.'))
             

@@ -30,6 +30,7 @@ class MeetingTime(models.Model):
     friday = models.BooleanField(default=False)
     saturday = models.BooleanField(default=False)
     sunday = models.BooleanField(default=False)
+    # strInfo = models.CharField(max_length=5, null=True) # something like "MTh" or "TWF"
     def __str__(self):
         return f"{self.term} {self.beginTime}-{self.endTime}"
     
@@ -39,6 +40,8 @@ class MeetingLocation(models.Model):
     room = models.CharField(max_length=10, null=True)
     campus = models.CharField(max_length=10, null=True)
     campusDescription = models.CharField(max_length=100, null=True)
+    # latitute = models.CharField(max_length=20, null=True)
+    # longitude = models.CharField(max_length=20, null=True)
     def __str__(self):
         return f"{self.building} {self.room} ({self.campus})"
 
@@ -54,7 +57,8 @@ class Course(models.Model):
     def __str__(self):
         return f"{self.program}{self.courseNumber} - {self.term}"
     def save(self, *args, **kwargs):
-        self.slug = slugify(self.program.subject+self.courseNumber)
+        ct = Course.objects.all().count()
+        self.slug = slugify(self.program.subject+self.courseNumber+'-'+self.term)
         super(Course, self).save(*args, **kwargs)
 
 # class CourseReview(models.Model):
@@ -88,19 +92,11 @@ class Degree(models.Model):
     cred = models.CharField(max_length=100)
     program = models.ForeignKey(Program, on_delete=models.CASCADE, related_name='degrees', null=True) 
     description = models.CharField(max_length=10000, null=True)
-    slug = models.SlugField(max_length=200, unique=True)
     link = models.CharField(max_length=200, null=True)
     requirements = models.CharField(max_length=50000, null=True)
     notes = models.CharField(max_length=10000, null=True)
     def __str__(self):
         return self.code
-    def save(self, *args, **kwargs):
-        if self.program is None:
-            ct = Degree.objects.all().count()
-            self.slug = slugify(self.code+'-'+self.cred+'-'+str(ct))
-        else:
-            self.slug = slugify(self.program.subject+'-'+self.code+'-'+self.cred)
-        super(Degree, self).save(*args, **kwargs)
 
 class Specialization(models.Model):
     degree = models.ForeignKey(Degree, on_delete=models.CASCADE, related_name='specializations')
@@ -112,6 +108,8 @@ class Specialization(models.Model):
     
 # For models like InstructorRole and CourseSectionLink should I be using ForeignKey or ManyToManyField?
 # Create a bunch more objects or just make one and handle all links through there.
+# or add field to sections model and handle that way.
+# Having only fields would speed up, but can make map with time/location objects.
 
 # Create a bunch of objects for each section/faculty pair.
 class InstructorRole(models.Model):
