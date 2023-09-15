@@ -15,7 +15,7 @@ def index(request):
     context = {
         # You can pass context data to your template here
         'course_name': 'Sample Course',
-        'course_description': 'This is a sample course description.',
+        'course': 'This is a sample course description.',
     }
 
     return render(request, 'courses/courses.html', context)
@@ -42,57 +42,29 @@ class ProgramList(generics.ListAPIView):
 
         queryset = Program.objects.all().order_by('subject')
         
-        subject = self.request.query_params.get('subject')
-        if subject:
-            queryset = queryset.filter(subject__icontains=subject)
+        subject_code = self.request.query_params.get('subject')
+        if subject_code:
+            queryset = queryset.filter(subject_code__icontains=subject_code)
 
-        subjectD = self.request.query_params.get('subjectD')
-        if subjectD:
-            queryset = queryset.filter(subjectDescription__icontains=subjectD)
+        subj = self.request.query_params.get('subject_desc')
+        if subj:
+            queryset = queryset.filter(subject__icontains=subj)
 
         return queryset
     
 class ProgramDetail(generics.RetrieveAPIView):
     queryset = Program.objects.all()
     serializer_class = ProgramSerializer
-
-class FacultyList(generics.ListAPIView):
-    serializer_class = FacultySerializer
-    def get_queryset(self):
-
-        queryset = Faculty.objects.all().order_by('displayName')
-
-        name = self.request.query_params.get('name')
-        if name:
-            queryset = queryset.filter(displayName__icontains=name)
-
-        program = self.request.query_params.get('program')
-        if program:
-            queryset = queryset.filter(programs__subject=program)
-
-        courseReferenceNumber = self.request.query_params.get('refnum')
-        if courseReferenceNumber:
-            print()
-            queryset = queryset.filter(instructing__section__courseReferenceNumber=courseReferenceNumber)
-
-        return queryset
-    
-class FacultyDetail(generics.RetrieveAPIView):
-    queryset = Faculty.objects.all()
-    serializer_class = FacultySerializer
-
-class FacultySections(generics.ListAPIView):
     serializer_class = CourseSectionSerializer
     def get_queryset(self):
-        faculty_id = self.kwargs['pk']
-        return Section.objects.filter(instructors=faculty_id).order_by('course__program__subject', 'course__courseNumber', 'sequenceNumber')
+        return Section.objects.order_by('course__program__subject', 'course__course_number', 'sequence')
 
 class MeetingTimeList(generics.ListAPIView):
     serializer_class = MeetingTimeSerializer
     pagination_class = PageNumberPagination
     def get_queryset(self):
 
-        queryset = MeetingTime.objects.all().order_by('term', 'beginTime', 'endTime')
+        queryset = MeetingTime.objects.all().order_by('term', 'start', 'end')
 
         # Filter by days strictly (all days must be true)
         days_of_week = self.request.query_params.get('on')
@@ -116,26 +88,26 @@ class MeetingTimeList(generics.ListAPIView):
                     filter_query |= Q(**{day: True})
             queryset = queryset.filter(filter_query)
 
-        bldg = self.request.query_params.get('bldg')
-        if bldg:
-            queryset = queryset.filter(sections__meetingLocation__buildingDescription__icontains=bldg).distinct()
+        # bldg = self.request.query_params.get('bldg')
+        # if bldg:
+        #     queryset = queryset.filter(sections__meetingLocation__buildingDescription__icontains=bldg).distinct()
 
         start = self.request.query_params.get('start')
         if start:
-            queryset = queryset.filter(beginTime=start)
+            queryset = queryset.filter(start=start)
 
     
         end = self.request.query_params.get('end')
         if end:
-            queryset = queryset.filter(endTime=end)
+            queryset = queryset.filter(end=end)
         
         saft = self.request.query_params.get('saft')
         if saft:
-            queryset = queryset.filter(beginTime__gte=saft)
+            queryset = queryset.filter(start__gte=saft)
         
         ebef = self.request.query_params.get('ebef')
         if ebef:
-            queryset = queryset.filter(endTime__lte=ebef)
+            queryset = queryset.filter(end__lte=ebef)
 
         return queryset
 
@@ -159,19 +131,19 @@ class MeetingTimeSections(generics.ListAPIView):
 class MeetingLocationList(generics.ListAPIView):
     serializer_class = MeetingLocationSerializer
     def get_queryset(self):
-        queryset = MeetingLocation.objects.all().order_by('building', 'room', 'campus')
+        queryset = MeetingLocation.objects.all().order_by('building', 'room')
 
-        building_description = self.request.query_params.get('bldg')
-        if building_description:
-            queryset = queryset.filter(buildingDescription__icontains=building_description)
+        building = self.request.query_params.get('bldg')
+        if building:
+            queryset = queryset.filter(building__icontains=building)
 
         wing = self.request.query_params.get('wing')
         if wing:
             queryset = queryset.filter(room__startswith=wing)
 
-        subject = self.request.query_params.get('subject')
-        if subject:
-            queryset = queryset.filter(sections__course__program__subject=subject).distinct()
+        # subject = self.request.query_params.get('subject')
+        # if subject:
+        #     queryset = queryset.filter(sections__course__program__subject=subject).distinct()
 
         return queryset
 
@@ -184,7 +156,7 @@ class MeetingLocationSections(generics.ListAPIView):
     pagination_class = PageNumberPagination
     def get_queryset(self):
         meeting_location = MeetingLocation.objects.get(id=self.kwargs['pk'])
-        queryset = Course.objects.filter(sections__meetingLocation=meeting_location)
+        queryset = Course.objects.filter(sections__meeting_location=meeting_location)
 
         subject = self.request.query_params.get('subject')
         if subject:
@@ -196,7 +168,7 @@ class CourseList(generics.ListAPIView):
     serializer_class = CourseSerializer
     pagination_class = PageNumberPagination
     def get_queryset(self):
-        queryset = Course.objects.order_by('program__subject', 'courseNumber')
+        queryset = Course.objects.order_by('program__subject', 'course_number')
 
         subject = self.request.query_params.get('subject')
         if subject:
@@ -204,31 +176,23 @@ class CourseList(generics.ListAPIView):
 
         bldg = self.request.query_params.get('bldg')
         if bldg:
-            queryset = queryset.filter(sections__meetingLocation__buildingDescription__icontains=bldg)
+            queryset = queryset.filter(sections__meeting_location__building__icontains=bldg)
 
-        term = self.request.query_params.get('term')
-        if term:
-            queryset = queryset.filter(term=term)
-
-        building_description = self.request.query_params.get('bldg')
-        if building_description:
-            queryset = queryset.filter(sections__meetingLocation__buildingDescription__icontains=building_description)
+        building = self.request.query_params.get('bldg')
+        if building:
+            queryset = queryset.filter(sections__meeting_location__building__icontains=building)
 
         level = self.request.query_params.get('level')
         if level:
-            queryset = queryset.filter(courseNumber__startswith=level)
+            queryset = queryset.filter(course_number__startswith=level)
 
         title = self.request.query_params.get('title')
         if title:
-            queryset = queryset.filter(courseTitle__icontains=title)
+            queryset = queryset.filter(title__icontains=title)
 
         credits = self.request.query_params.get('credits')
         if credits:
-            queryset = queryset.filter(creditHours=credits)
-
-        refnum = self.request.query_params.get('refnum')
-        if refnum:
-            queryset = queryset.filter(referenceNumber=refnum)
+            queryset = queryset.filter(credit=credits)
 
         return queryset
     
@@ -240,7 +204,7 @@ class SectionList(generics.ListAPIView):
     serializer_class = SectionSerializer
     pagination_class = PageNumberPagination
     def get_queryset(self):
-        queryset = Section.objects.order_by('course__program__subject', 'course__courseNumber')
+        queryset = Section.objects.order_by('course__program__subject', 'course__course_number')
 
         subject = self.request.query_params.get('subject')
         if subject:
@@ -248,32 +212,32 @@ class SectionList(generics.ListAPIView):
 
         course = self.request.query_params.get('course')
         if course:
-            queryset = queryset.filter(course__courseNumber=course)
+            queryset = queryset.filter(course__course_number=course)
         
         term = self.request.query_params.get('term')
         if term:
             queryset = queryset.filter(term=term)
 
         # Allow partial matches for building description
-        building_description = self.request.query_params.get('bldg')
-        if building_description:
-            queryset = queryset.filter(meetingLocation__buildingDescription__icontains=building_description)
+        building = self.request.query_params.get('bldg')
+        if building:
+            queryset = queryset.filter(meeting_location__building__icontains=building)
 
         room = self.request.query_params.get('room')
         if room:
-            queryset = queryset.filter(meetingLocation__room=room)
+            queryset = queryset.filter(meeting_location__room=room)
 
-        refnum = self.request.query_params.get('refnum')
-        if refnum:
-            queryset = queryset.filter(courseReferenceNumber=refnum)
+        crn = self.request.query_params.get('crn')
+        if crn:
+            queryset = queryset.filter(crn=crn)
 
-        instructional_method = self.request.query_params.get('F2F')
-        if instructional_method:
-            queryset = queryset.filter(meetingTime__instructionalMethod=instructional_method)
+        delivery = self.request.query_params.get('delivery')
+        if delivery:
+            queryset = queryset.filter(meeting_time__delivery=delivery)
         
         course_type = self.request.query_params.get('type')
         if course_type:
-            queryset = queryset.filter(scheduleTypeDescription__icontains=course_type)
+            queryset = queryset.filter(type__icontains=course_type)
 
         # Filter by days strictly (all days must be true)
         days_of_week = self.request.query_params.get('on')
@@ -282,7 +246,7 @@ class SectionList(generics.ListAPIView):
             filter_query = Q()
             for day, value in days_dict.items():
                 if value == 1:
-                    filter_name = f'meetingTime__{day}'
+                    filter_name = f'meeting_time__{day}'
                     filter_query &= Q(**{filter_name: True})
                 else:
                     filter_query &= Q(**{day: False})
@@ -295,25 +259,25 @@ class SectionList(generics.ListAPIView):
             filter_query = Q()
             for day, value in days_dict.items():
                 if value==1:
-                    filter_name = f'meetingTime__{day}'
+                    filter_name = f'meeting_time__{day}'
                     filter_query |= Q(**{filter_name: True})
             queryset = queryset.filter(filter_query)
 
         begin = self.request.query_params.get('begin')
         if begin:
-            queryset = queryset.filter(meetingTime__beginTime=begin)
+            queryset = queryset.filter(meeting_time__start=begin)
 
         end = self.request.query_params.get('end')
         if end:
-            queryset = queryset.filter(meetingTime__endTime=end)
+            queryset = queryset.filter(meeting_time__end=end)
         
         bAfter = self.request.query_params.get('baft')
         if bAfter:
-            queryset = queryset.filter(meetingTime__beginTime__gte=bAfter)
+            queryset = queryset.filter(meeting_time__start__gte=bAfter)
         
         eBefore = self.request.query_params.get('ebef')
         if eBefore:
-            queryset = queryset.filter(meetingTime__endTime__lte=eBefore)
+            queryset = queryset.filter(meeting_time__end__lte=eBefore)
 
         return queryset
 
@@ -359,26 +323,26 @@ class GrandProgramDetail(generics.RetrieveAPIView):
         
 class TermCoursesView(APIView, PageNumberPagination):
     def get(self, request, term, format=None):
-        courses = Course.objects.filter(term=term).order_by('program__subject','courseNumber')
+        courses = Course.objects.filter(term=term).order_by('program__subject','course_number')
         page = self.paginate_queryset(courses, request)
         serializer = CourseSerializer(page, many=True)
         return self.get_paginated_response(serializer.data)
 
 class SubjectCoursesView(APIView):
     def get(self, request, term, subject, format=None):
-        courses = Course.objects.filter(term=term, program__subject=subject).order_by('courseNumber')
+        courses = Course.objects.filter(term=term, program__subject=subject).order_by('course_number')
         serializer = CourseSerializer(courses, many=True)
         return Response(serializer.data, status=status.HTTP_200_OK)
 
 class CourseSectionsView(APIView):
     def get(self, request, term, subject, course_number, format=None):
-        sections = Section.objects.filter(term=term, course__program__subject=subject, course__courseNumber=course_number).order_by('sequenceNumber')
+        sections = Section.objects.filter(term=term, course__program__subject=subject, course__course_number=course_number).order_by('sequenceNumber')
         serializer = BriefSectionSerializer(sections, many=True)
         return Response(serializer.data, status=status.HTTP_200_OK)
     
 class DetailedSection(APIView):
-    def get(self, request, term, subject, course_number, sequenceNumber, format=None):
-        section = Section.objects.get(term=term, course__program__subject=subject, course__courseNumber=course_number, sequenceNumber=sequenceNumber)
+    def get(self, request, term, subject, course_number, sequence, format=None):
+        section = Section.objects.get(term=term, course__program__subject=subject, course__course_number=course_number, sequence=sequence)
         serializer = SectionSerializer(section)
         return Response(serializer.data, status=status.HTTP_200_OK)
     

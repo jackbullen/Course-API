@@ -7,11 +7,9 @@ class Command(BaseCommand):
     def handle(self, *args, **kwargs):
         Course.objects.all().delete()
         Program.objects.all().delete()
-        Faculty.objects.all().delete()
         MeetingTime.objects.all().delete()
         MeetingLocation.objects.all().delete()
         Section.objects.all().delete()
-        InstructorRole.objects.all().delete()
         CourseSectionLink.objects.all().delete()
         Degree.objects.all().delete()
         Specialization.objects.all().delete()

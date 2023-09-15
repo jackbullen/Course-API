@@ -6,11 +6,6 @@ class ProgramSerializer(serializers.ModelSerializer):
         model = Program
         fields = '__all__'
 
-class FacultySerializer(serializers.ModelSerializer):
-    class Meta:
-        model = Faculty
-        fields = '__all__'
-
 class MeetingTimeSerializer(serializers.ModelSerializer):
     class Meta:
         model = MeetingTime
@@ -27,17 +22,11 @@ class CourseSerializer(serializers.ModelSerializer):
         model = Course
         fields = '__all__'
     
-class InstructorRoleSerializer(serializers.ModelSerializer):
-    faculty = FacultySerializer()
-    class Meta:
-        model = InstructorRole
-        fields = '__all__'
-
 class SectionSerializer(serializers.ModelSerializer):
-    meetingTime = MeetingTimeSerializer(many=True) 
-    meetingLocation = MeetingLocationSerializer(many=True)
-    course = CourseSerializer()
-    instructors = InstructorRoleSerializer(many=True)
+    # meeting_time = MeetingTimeSerializer() 
+    # meeting_location = MeetingLocationSerializer()
+    # course = CourseSerializer()
+    # instructors = InstructorRoleSerializer(many=True)
     class Meta:
         model = Section
         fields = '__all__'
@@ -49,7 +38,6 @@ class BriefSectionSerializer(serializers.ModelSerializer):
 
 class CourseSectionSerializer(serializers.ModelSerializer):
     course = CourseSerializer()
-    instructors = InstructorRoleSerializer(many=True)
     class Meta:
         model = Section
         fields = '__all__'

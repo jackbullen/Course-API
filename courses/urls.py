@@ -7,10 +7,6 @@ urlpatterns = [
     path('programs/', ProgramList.as_view(), name='query_programs'),
     path('programs/<int:pk>/', ProgramDetail.as_view(), name='program_detail'),
 
-    path('faculties/', FacultyList.as_view(), name='query_faculties'),
-    path('faculties/<int:pk>/', FacultyDetail.as_view(), name='faculty_detail'),
-    path('faculties/<int:pk>/sections', FacultySections.as_view(), name='faculty_detail'),
-
     path('meetingtimes/', MeetingTimeList.as_view(), name='query_meeting_times'),
     path('meetingtimes/<int:pk>/', MeetingTimeDetail.as_view(), name='meeting_time_detail'),
     path('meetingtimes/<int:pk>/sections', MeetingTimeSections.as_view(), name='meeting_time_courses'),
